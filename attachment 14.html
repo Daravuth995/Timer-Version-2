@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Countdown Timer | Focus & Practice Tool</title>
+    <meta name="description" content="Dynamic countdown timer with visual feedback for student practice sessions. Track pronunciation, intonation, and ending sound with engaging animations.">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        .container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(to bottom right, #0a0e27, #1a1f3a, #0f1729);
+            position: relative;
+            overflow: hidden;
+            transition: background 1s ease;
+        }
+
+        .container.warning {
+            background: linear-gradient(to bottom right, #1a1047, #2d1b69, #1a1047);
+        }
+
+        .container.urgent {
+            background: linear-gradient(to bottom right, #2d0a1f, #4a0e2e, #2d0a1f);
+        }
+
+        /* Glass Effect */
+        .glass {
+            background: linear-gradient(135deg, rgba(37, 47, 71, 0.6), rgba(37, 47, 71, 0.3));
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Glow Effects */
+        .glow-cyan {
+            box-shadow: 0 0 30px rgba(51, 204, 255, 0.6), 0 0 60px rgba(51, 204, 255, 0.4), 0 0 100px rgba(51, 204, 255, 0.2);
+        }
+
+        .glow-purple {
+            box-shadow: 0 0 30px rgba(168, 85, 247, 0.6), 0 0 60px rgba(168, 85, 247, 0.4), 0 0 100px rgba(168, 85, 247, 0.2);
+        }
+
+        .glow-pink {
+            box-shadow: 0 0 30px rgba(236, 72, 153, 0.6), 0 0 60px rgba(236, 72, 153, 0.4), 0 0 100px rgba(236, 72, 153, 0.2);
+        }
+
+        .glow-orange {
+            box-shadow: 0 0 30px rgba(251, 146, 60, 0.6), 0 0 60px rgba(251, 146, 60, 0.4), 0 0 100px rgba(251, 146, 60, 0.2);
+        }
+
+        /* Particles */
+        .particles {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: rgba(51, 204, 255, 0.3);
+            animation: particleFloat 8s ease-out forwards;
+        }
+
+        @keyframes particleFloat {
+            0% { transform: translate(0, 0) scale(1); opacity: 0.8; }
+            50% { transform: translate(50px, -100px) scale(1.5); opacity: 0.5; }
+            100% { transform: translate(0, -200px) scale(0.5); opacity: 0; }
+        }
+
+        /* Confetti */
+        .confetti {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: confettiFall 3s ease-out forwards;
+        }
+
+        @keyframes confettiFall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* Orbiting Reminders */
+        .orbit-container {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .reminder-card {
+            position: absolute;
+            transition: all 0.5s ease;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) translateX(0px); }
+            33% { transform: translateY(-15px) translateX(-15px); }
+            66% { transform: translateY(-25px) translateX(15px); }
+        }
+
+        .reminder-content {
+            padding: 24px;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .reminder-icon {
+            width: 40px;
+            height: 40px;
+        }
+
+        .reminder-label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #fafafa;
+            white-space: nowrap;
+        }
+
+        .reminder-tip {
+            font-size: 12px;
+            color: #a1a1aa;
+            text-align: center;
+            max-width: 120px;
+            animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes scaleIn {
+            0% { transform: scale(0.85); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Timer Container */
+        .timer-wrapper {
+            position: relative;
+            margin-bottom: 80px;
+            animation: floatGentle 6s ease-in-out infinite;
+            z-index: 10;
+        }
+
+        @keyframes floatGentle {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .timer-glass {
+            border-radius: 9999px;
+            padding: 32px;
+        }
+
+        .timer-circle {
+            width: 384px;
+            height: 384px;
+            position: relative;
+        }
+
+        .timer-display {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .timer-digits {
+            font-size: 96px;
+            font-weight: 900;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.05em;
+            color: #fafafa;
+            text-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
+            transition: all 0.3s ease;
+        }
+
+        .timer-digits.urgent {
+            color: #f87171;
+            animation: bounceGentle 1.5s ease-in-out infinite;
+        }
+
+        @keyframes bounceGentle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .focus-indicator {
+            margin-top: 24px;
+            border-radius: 9999px;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .focus-icon {
+            width: 20px;
+            height: 20px;
+            animation: pulseGlow 2.5s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(1.08); }
+        }
+
+        .focus-text {
+            font-size: 14px;
+            font-weight: bold;
+            color: #fafafa;
+        }
+
+        .complete-badge {
+            margin-top: 24px;
+            border-radius: 16px;
+            padding: 16px 32px;
+            animation: pulseGlow 2.5s ease-in-out infinite;
+        }
+
+        .complete-text {
+            font-size: 30px;
+            font-weight: 900;
+            color: #33ccff;
+        }
+
+        /* Time Presets */
+        .time-presets {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 40px;
+            z-index: 10;
+            animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            animation-delay: 0.2s;
+            animation-fill-mode: both;
+        }
+
+        .time-btn {
+            width: 80px;
+            height: 80px;
+            font-size: 18px;
+            font-weight: 900;
+            border-radius: 16px;
+            border: 1px solid rgba(51, 204, 255, 0.2);
+            background: transparent;
+            color: #fafafa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .time-btn:hover:not(:disabled) {
+            transform: scale(1.1);
+            background: rgba(51, 204, 255, 0.1);
+        }
+
+        .time-btn.active {
+            background: rgba(51, 204, 255, 0.2);
+            color: #33ccff;
+            border-color: #33ccff;
+            transform: scale(1.1);
+        }
+
+        .time-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Control Buttons */
+        .controls {
+            display: flex;
+            gap: 24px;
+            z-index: 10;
+            animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            animation-delay: 0.4s;
+            animation-fill-mode: both;
+        }
+
+        .control-btn {
+            padding: 32px 64px;
+            font-size: 24px;
+            font-weight: 900;
+            border-radius: 16px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .start-btn {
+            background: rgba(51, 204, 255, 0.2);
+            color: #33ccff;
+            animation: pulseGlow 2.5s ease-in-out infinite;
+        }
+
+        .start-btn:hover:not(:disabled) {
+            transform: scale(1.1);
+            background: rgba(51, 204, 255, 0.3);
+        }
+
+        .start-btn:disabled {
+            background: rgba(113, 113, 122, 0.2);
+            color: #71717a;
+            animation: none;
+            cursor: not-allowed;
+        }
+
+        .reset-btn {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .reset-btn:hover {
+            transform: scale(1.1);
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        /* SVG Icons */
+        .icon {
+            display: inline-block;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="container">
+        <!-- Particles -->
+        <div id="particles" class="particles"></div>
+
+        <!-- Confetti Container -->
+        <div id="confetti" style="position: absolute; inset: 0; pointer-events: none; z-index: 50;"></div>
+
+        <!-- Orbiting Reminders -->
+        <div class="orbit-container">
+            <div id="reminder-0" class="reminder-card">
+                <div class="reminder-content glass glow-cyan">
+                    <svg class="reminder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #33ccff;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                    </svg>
+                    <span class="reminder-label">Pronunciation</span>
+                    <span id="tip-0" class="reminder-tip" style="display: none;">Clear articulation of each sound</span>
+                </div>
+            </div>
+            <div id="reminder-1" class="reminder-card">
+                <div class="reminder-content glass glow-purple">
+                    <svg class="reminder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #a855f7;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>
+                    </svg>
+                    <span class="reminder-label">Intonation</span>
+                    <span id="tip-1" class="reminder-tip" style="display: none;">Rise and fall of your voice</span>
+                </div>
+            </div>
+            <div id="reminder-2" class="reminder-card">
+                <div class="reminder-content glass glow-pink">
+                    <svg class="reminder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #ec4899;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                    </svg>
+                    <span class="reminder-label">Ending Sound</span>
+                    <span id="tip-2" class="reminder-tip" style="display: none;">Complete final consonants</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Central Timer -->
+        <div class="timer-wrapper">
+            <div id="timer-glass" class="timer-glass glass glow-cyan">
+                <div class="timer-circle">
+                    <svg width="384" height="384" style="transform: rotate(-90deg); filter: drop-shadow(0 25px 25px rgba(0, 0, 0, 0.5));">
+                        <circle cx="192" cy="192" r="170" stroke="rgba(113, 113, 122, 0.2)" stroke-width="2" fill="none" opacity="0.1"/>
+                        <circle cx="192" cy="192" r="165" stroke="rgba(113, 113, 122, 0.2)" stroke-width="16" fill="none" opacity="0.2"/>
+                        <circle id="progress-ring" cx="192" cy="192" r="165" stroke="url(#gradient)" stroke-width="16" fill="none" stroke-linecap="round" stroke-dasharray="1036.73" stroke-dashoffset="1036.73" style="transition: stroke-dashoffset 1s linear;"/>
+                        <defs>
+                            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#33ccff"/>
+                                <stop offset="50%" stop-color="#a855f7"/>
+                                <stop offset="100%" stop-color="#ec4899"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <div class="timer-display">
+                        <div id="timer-digits" class="timer-digits">02:00</div>
+                        <div id="focus-indicator" class="focus-indicator glass" style="display: none;">
+                            <svg id="focus-icon" class="focus-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"></svg>
+                            <span id="focus-text" class="focus-text"></span>
+                        </div>
+                        <div id="complete-badge" class="complete-badge glass glow-cyan" style="display: none;">
+                            <div class="complete-text">Excellent Work! 🎉</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Time Selection -->
+        <div class="time-presets">
+            <button class="time-btn" data-time="60">1m</button>
+            <button class="time-btn active" data-time="120">2m</button>
+            <button class="time-btn" data-time="180">3m</button>
+            <button class="time-btn" data-time="240">4m</button>
+            <button class="time-btn" data-time="300">5m</button>
+            <button class="time-btn" data-time="600">10m</button>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button id="start-btn" class="control-btn start-btn glow-cyan">Start Timer</button>
+            <button id="reset-btn" class="control-btn reset-btn glow-orange">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let selectedTime = 120;
+        let timeLeft = 120;
+        let isRunning = false;
+        let timerInterval = null;
+        let reminderInterval = null;
+        let currentReminder = 0;
+        let orbitAngle = 0;
+        let orbitInterval = null;
+
+        const REMINDERS = [
+            { label: 'Pronunciation', tip: 'Clear articulation of each sound', icon: 'M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z' },
+            { label: 'Intonation', tip: 'Rise and fall of your voice', icon: 'M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z' },
+            { label: 'Ending Sound', tip: 'Complete final consonants', icon: 'M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3' }
+        ];
+
+        // Elements
+        const container = document.getElementById('app');
+        const timerDigits = document.getElementById('timer-digits');
+        const progressRing = document.getElementById('progress-ring');
+        const startBtn = document.getElementById('start-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const timeButtons = document.querySelectorAll('.time-btn');
+        const timerGlass = document.getElementById('timer-glass');
+        const focusIndicator = document.getElementById('focus-indicator');
+        const focusIcon = document.getElementById('focus-icon');
+        const focusText = document.getElementById('focus-text');
+        const completeBadge = document.getElementById('complete-badge');
+        const particlesContainer = document.getElementById('particles');
+        const confettiContainer = document.getElementById('confetti');
+
+        // Initialize particles
+        for (let i = 0; i < 20; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 4 + 's';
+            particle.style.animationDuration = (4 + Math.random() * 4) + 's';
+            particlesContainer.appendChild(particle);
+        }
+
+        // Update timer display
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerDigits.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            const progress = ((selectedTime - timeLeft) / selectedTime) * 100;
+            const circumference = 2 * Math.PI * 165;
+            const offset = circumference * (1 - progress / 100);
+            progressRing.style.strokeDashoffset = offset;
+
+            // Update background and glow
+            const percentage = (timeLeft / selectedTime) * 100;
+            if (percentage > 50) {
+                container.className = 'container';
+                timerGlass.className = 'timer-glass glass glow-cyan';
+                timerDigits.classList.remove('urgent');
+            } else if (percentage > 20) {
+                container.className = 'container warning';
+                timerGlass.className = 'timer-glass glass glow-purple';
+                timerDigits.classList.remove('urgent');
+            } else {
+                container.className = 'container urgent';
+                timerGlass.className = 'timer-glass glass glow-orange';
+                if (isRunning && timeLeft <= 10) {
+                    timerDigits.classList.add('urgent');
+                }
+            }
+        }
+
+        // Orbit reminders
+        function updateOrbit() {
+            const radius = 280;
+            for (let i = 0; i < 3; i++) {
+                const angle = (orbitAngle + i * 120) * Math.PI / 180;
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                const card = document.getElementById(`reminder-${i}`);
+                card.style.transform = `translate(${x}px, ${y}px) scale(${currentReminder === i && isRunning ? 1.25 : 0.9})`;
+                card.style.opacity = currentReminder === i && isRunning ? 1 : 0.4;
+                
+                const tip = document.getElementById(`tip-${i}`);
+                tip.style.display = currentReminder === i && isRunning ? 'block' : 'none';
+            }
+            orbitAngle += 0.5;
+        }
+
+        // Start orbit animation
+        orbitInterval = setInterval(updateOrbit, 50);
+
+        // Timer tick
+        function tick() {
+            if (timeLeft > 0) {
+                timeLeft--;
+                updateDisplay();
+                
+                if (timeLeft === 0) {
+                    stopTimer();
+                    showConfetti();
+                    completeBadge.style.display = 'block';
+                }
+            }
+        }
+
+        // Start timer
+        function startTimer() {
+            if (timeLeft === 0) {
+                timeLeft = selectedTime;
+            }
+            isRunning = true;
+            startBtn.disabled = true;
+            startBtn.textContent = 'Running...';
+            
+            // Show focus indicator
+            focusIndicator.style.display = 'flex';
+            updateFocusIndicator();
+            
+            // Disable time buttons
+            timeButtons.forEach(btn => btn.disabled = true);
+            
+            timerInterval = setInterval(tick, 1000);
+            reminderInterval = setInterval(() => {
+                currentReminder = (currentReminder + 1) % 3;
+                updateFocusIndicator();
+            }, 4000);
+            
+            updateDisplay();
+        }
+
+        // Stop timer
+        function stopTimer() {
+            isRunning = false;
+            clearInterval(timerInterval);
+            clearInterval(reminderInterval);
+            startBtn.disabled = timeLeft === 0;
+            startBtn.textContent = timeLeft === 0 ? 'Finished' : 'Start Timer';
+            
+            if (timeLeft !== 0) {
+                focusIndicator.style.display = 'none';
+            }
+            
+            timeButtons.forEach(btn => btn.disabled = false);
+        }
+
+        // Reset timer
+        function resetTimer() {
+            stopTimer();
+            timeLeft = selectedTime;
+            currentReminder = 0;
+            focusIndicator.style.display = 'none';
+            completeBadge.style.display = 'none';
+            confettiContainer.innerHTML = '';
+            updateDisplay();
+            updateFocusIndicator();
+        }
+
+        // Update focus indicator
+        function updateFocusIndicator() {
+            const reminder = REMINDERS[currentReminder];
+            focusText.textContent = `Focus: ${reminder.label}`;
+            focusIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${reminder.icon}"></path>`;
+            
+            const colors = ['#33ccff', '#a855f7', '#ec4899'];
+            focusIcon.style.color = colors[currentReminder];
+        }
+
+        // Show confetti
+        function showConfetti() {
+            for (let i = 0; i < 60; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 80%, 65%)`;
+                confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                confetti.style.animationDuration = (2 + Math.random() * 2) + 's';
+                confettiContainer.appendChild(confetti);
+            }
+            
+            setTimeout(() => {
+                confettiContainer.innerHTML = '';
+            }, 3000);
+        }
+
+        // Event listeners
+        startBtn.addEventListener('click', startTimer);
+        resetBtn.addEventListener('click', resetTimer);
+
+        timeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (!isRunning) {
+                    selectedTime = parseInt(btn.dataset.time);
+                    timeLeft = selectedTime;
+                    timeButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    completeBadge.style.display = 'none';
+                    confettiContainer.innerHTML = '';
+                    updateDisplay();
+                }
+            });
+        });
+
+        // Initialize
+        updateDisplay();
+        updateFocusIndicator();
+    </script>
+</body>
+</html>
